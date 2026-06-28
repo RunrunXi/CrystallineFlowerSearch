@@ -14,18 +14,18 @@ modId = "forge"
 mandatory = true
 versionRange = "${forge_version_range}"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "minecraft"
 mandatory = true
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 
 [[dependencies."${mod_id}"]]
-modId="bumblezone"
+modId = "the_bumblezone"
 mandatory = true
 versionRange = "[7.9.5,)"
 ordering = "AFTER"
-side = "CLIENT"
+side = "BOTH"
