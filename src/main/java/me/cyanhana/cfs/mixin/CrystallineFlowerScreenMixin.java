@@ -113,7 +113,6 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
 
                     // 如果安装了拼音模组，再进行拼音匹配
                     if (JECHARACTERS_LOADED) {
-                        System.out.println("开始比对: " + translatedName + " 与 " + filter);
                         return cfs$pinyinMatch(translatedName, filter);
                     }
 
