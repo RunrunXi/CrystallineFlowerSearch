@@ -29,3 +29,10 @@ mandatory = true
 versionRange = "[7.9.5,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "jecharacters"
+mandatory = false
+versionRange = "[4.5.4,)"
+ordering = "AFTER"
+side = "BOTH"

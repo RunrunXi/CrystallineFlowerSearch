@@ -1,6 +1,5 @@
 package me.cyanhana.cfs.mixin;
 
-import com.telepathicgrunt.the_bumblezone.client.screens.CrystallineFlowerScreen;
 import me.cyanhana.cfs.SearchBoxAccessor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;

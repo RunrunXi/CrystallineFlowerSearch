@@ -5,6 +5,7 @@ import com.telepathicgrunt.the_bumblezone.menus.CrystallineFlowerMenu;
 import me.cyanhana.cfs.SearchBoxAccessor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -21,6 +22,19 @@ import java.util.Locale;
 
 @Mixin(CrystallineFlowerScreen.class)
 public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScreen<CrystallineFlowerMenu> implements SearchBoxAccessor {
+
+    @Unique
+    private static final boolean JECHARACTERS_LOADED = cfs$checkJecharacters();
+
+    @Unique
+    private static boolean cfs$checkJecharacters() {
+        try {
+            Class.forName("me.towdium.jecharacters.utils.Match");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 
     @Unique
     private EditBox cfs$searchBox;
@@ -89,16 +103,40 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
                             .getOrDefault(translationKey)
                             .toLowerCase(Locale.ROOT);
 
-                    // 按翻译键、翻译后名称、路径、命名空间搜索
-                    return translationKey.toLowerCase(Locale.ROOT).contains(filter)
+                    // 先进行常规搜索（翻译键、翻译名、路径、命名空间）
+                    if (translationKey.toLowerCase(Locale.ROOT).contains(filter)
                             || translatedName.contains(filter)
                             || skeleton.path.toLowerCase(Locale.ROOT).contains(filter)
-                            || skeleton.namespace.toLowerCase(Locale.ROOT).contains(filter);
+                            || skeleton.namespace.toLowerCase(Locale.ROOT).contains(filter)) {
+                        return true;
+                    }
+
+                    // 如果安装了拼音模组，再进行拼音匹配
+                    if (JECHARACTERS_LOADED) {
+                        System.out.println("开始比对: " + translatedName + " 与 " + filter);
+                        return cfs$pinyinMatch(translatedName, filter);
+                    }
+
+                    return false;
                 })
                 .toList();
 
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(filtered);
+    }
+
+    @Unique
+    private boolean cfs$pinyinMatch(String translatedName, String filter) {
+        try {
+            // 通过反射调用 Match.contains()，避免直接 import
+            return (boolean) Class
+                    .forName("me.towdium.jecharacters.utils.Match")
+                    .getMethod("contains", String.class, CharSequence.class)
+                    .invoke(null, translatedName, filter);
+        } catch (Exception e) {
+            // 如果反射失败，安全地返回 false，不影响正常搜索
+            return false;
+        }
     }
 
     /**

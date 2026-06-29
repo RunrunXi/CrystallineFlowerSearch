@@ -80,17 +80,23 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven {
-        url "https://nexus.resourcefulbees.com/repository/telepathicgrunt/"
+        url = "https://nexus.resourcefulbees.com/repository/telepathicgrunt/"
+    }
+    maven {
+        name = "CurseMaven"
+        url = "https://cursemaven.com"
     }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    compileOnly fg.deobf("com.telepathicgrunt:Bumblezone:7.9.5+1.20.6-forge")
-
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
+    implementation fg.deobf("com.telepathicgrunt:Bumblezone:7.9.5+1.20.1-forge")
+    implementation fg.deobf("curse.maven:Athena-841890:5176879") // Athena 3.1.2
+
+    implementation fg.deobf("curse.maven:JECh-250702:8117466") // JECh 4.6.4
 }
 
 tasks.named('processResources', ProcessResources).configure {
