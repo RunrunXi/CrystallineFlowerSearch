@@ -5,7 +5,6 @@ import com.telepathicgrunt.the_bumblezone.menus.CrystallineFlowerMenu;
 import me.cyanhana.cfs.SearchBoxAccessor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,6 +14,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +23,8 @@ import java.util.Locale;
 @Mixin(CrystallineFlowerScreen.class)
 public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScreen<CrystallineFlowerMenu> implements SearchBoxAccessor {
 
+    @Unique
+    private final ICrystallineFlowerScreenAccessor cfs$accessor = (ICrystallineFlowerScreenAccessor) this;
     @Unique
     private static final boolean JECHARACTERS_LOADED = cfs$checkJecharacters();
 
@@ -81,6 +83,7 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
                 CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
                 CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(this.cfs$filteredEnchantmentList);
                 this.cfs$filteredEnchantmentList.clear();
+                cfs$resetScrollState();
             }
             return;
         }
@@ -122,6 +125,15 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
 
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(filtered);
+
+        cfs$resetScrollState();
+    }
+
+    @Unique
+    private void cfs$resetScrollState() {
+        cfs$accessor.setStartIndex(0);
+        cfs$accessor.setScrollOff(0.0F);
+        cfs$accessor.setScrolling(false);
     }
 
     @Unique
@@ -143,11 +155,7 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
      */
     @Inject(method = "onClose", at = @At("HEAD"))
     private void cfs$onCloseCleanup(CallbackInfo ci) {
-        if (!this.cfs$filteredEnchantmentList.isEmpty()) {
-            CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
-            CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(this.cfs$filteredEnchantmentList);
-            this.cfs$filteredEnchantmentList.clear();
-        }
+        this.cfs$filteredEnchantmentList.clear();
     }
 
     /**
@@ -156,7 +164,6 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
     @Inject(method = "populateAvailableEnchants", at = @At("TAIL"), remap = false)
     private void cfs$onPopulateEnchants(CallbackInfo ci) {
         if (this.cfs$searchBox != null && !this.cfs$searchBox.getValue().isEmpty()) {
-            this.cfs$filteredEnchantmentList.clear();
             this.cfs$onSearchChanged(this.cfs$searchBox.getValue());
         }
     }
