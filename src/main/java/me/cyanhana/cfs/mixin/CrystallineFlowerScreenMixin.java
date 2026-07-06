@@ -184,4 +184,27 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
             }
         }
     }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // 如果搜索框有焦点，优先处理
+        if (this.cfs$searchBox != null && this.cfs$searchBox.isFocused()) {
+            // ESC：移除焦点但不关闭界面
+            if (keyCode == 256) {
+                this.cfs$searchBox.setFocused(false);
+                this.setFocused(null);
+                return true;
+            }
+            // 搜索框处理输入
+            if (this.cfs$searchBox.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+            // 有焦点时仅能输入
+            return true;
+        }
+
+        // 下面是原版的逻辑（保持和父类一致）
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
 }
