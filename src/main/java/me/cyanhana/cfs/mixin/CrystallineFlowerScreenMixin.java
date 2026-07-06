@@ -167,4 +167,21 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
             this.cfs$onSearchChanged(this.cfs$searchBox.getValue());
         }
     }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"))
+    private void cfs$handleSearchBoxFocus(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (this.cfs$searchBox != null) {
+            if (cfs$searchBox.isMouseOver(mouseX, mouseY)) {
+                // 右键点击
+                if (button == 1) {
+                    // 清空搜索框
+                    this.cfs$searchBox.setValue("");
+                }
+            } else {
+                // 点击其他地方 -> 移除焦点
+                this.cfs$searchBox.setFocused(false);
+                this.setFocused(null);
+            }
+        }
+    }
 }
