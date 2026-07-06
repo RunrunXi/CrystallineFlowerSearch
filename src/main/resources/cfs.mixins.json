@@ -8,8 +8,7 @@
   ],
   "client": [
     "AbstractContainerScreenMixin",
-    "CrystallineFlowerScreenMixin",
-    "ICrystallineFlowerScreenAccessor"
+    "CrystallineFlowerScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

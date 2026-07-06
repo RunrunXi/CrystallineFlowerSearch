@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -24,9 +25,14 @@ import java.util.Locale;
 public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScreen<CrystallineFlowerMenu> implements SearchBoxAccessor {
 
     @Unique
-    private final ICrystallineFlowerScreenAccessor cfs$accessor = (ICrystallineFlowerScreenAccessor) this;
-    @Unique
     private static final boolean JECHARACTERS_LOADED = cfs$checkJecharacters();
+
+    @Shadow(remap = false)
+    private int startIndex;
+    @Shadow(remap = false)
+    private float scrollOff;
+    @Shadow(remap = false)
+    private boolean scrolling;
 
     @Unique
     private static boolean cfs$checkJecharacters() {
@@ -131,9 +137,9 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
 
     @Unique
     private void cfs$resetScrollState() {
-        cfs$accessor.setStartIndex(0);
-        cfs$accessor.setScrollOff(0.0F);
-        cfs$accessor.setScrolling(false);
+        startIndex = 0;
+        scrollOff = 0.0F;
+        scrolling = false;
     }
 
     @Unique
