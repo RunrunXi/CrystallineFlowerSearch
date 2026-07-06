@@ -3,6 +3,7 @@ package me.cyanhana.cfs.mixin;
 import com.telepathicgrunt.the_bumblezone.client.screens.CrystallineFlowerScreen;
 import com.telepathicgrunt.the_bumblezone.menus.CrystallineFlowerMenu;
 import me.cyanhana.cfs.SearchBoxAccessor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -80,7 +81,7 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
      * 搜索内容变化时的回调
      */
     @Unique
-    private void cfs$onSearchChanged(String searchText) {
+    public void cfs$onSearchChanged(String searchText) {
         String filter = searchText.toLowerCase(Locale.ROOT).trim();
 
         if (filter.isEmpty()) {
@@ -136,6 +137,30 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
     }
 
     @Unique
+    public EditBox cfs$getSearchBox() {
+        return this.cfs$searchBox;
+    }
+
+    @Unique
+    public void cfs$clearFilteredList() {
+        this.cfs$filteredEnchantmentList.clear();
+    }
+
+    @Unique
+    public void cfs$applyFilter(String text) {
+        // 保存当前滚动位置
+        int oldStartIndex = this.startIndex;
+        float oldScrollOff = this.scrollOff;
+        // 执行过滤
+        this.cfs$onSearchChanged(text);
+        // 恢复滚动位置
+        int maxIndex = Math.max(0, CrystallineFlowerScreen.enchantmentsAvailableSortedList.size() - 3);
+        this.startIndex = Math.min(oldStartIndex, maxIndex);
+        this.scrollOff = maxIndex > 0 ? (float) this.startIndex / maxIndex : 0.0F;
+        this.scrolling = false;
+    }
+
+    @Unique
     private void cfs$resetScrollState() {
         startIndex = 0;
         scrollOff = 0.0F;
@@ -165,12 +190,18 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
     }
 
     /**
-     * 当附魔列表被重新填充时，如果当前有搜索条件则重新应用过滤
+     * 在更新附魔列表后重新应用搜索过滤
      */
-    @Inject(method = "populateAvailableEnchants", at = @At("TAIL"), remap = false)
-    private void cfs$onPopulateEnchants(CallbackInfo ci) {
-        if (this.cfs$searchBox != null && !this.cfs$searchBox.getValue().isEmpty()) {
-            this.cfs$onSearchChanged(this.cfs$searchBox.getValue());
+    @Inject(method = "SortAndAssignAvailableEnchants", at = @At("TAIL"), remap = false)
+    private static void cfs$afterSortAndAssign(CallbackInfo ci) {
+        // 如果当前有搜索条件，重新应用过滤
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof CrystallineFlowerScreenMixin mixin) {
+            EditBox searchBox = mixin.cfs$getSearchBox();
+            if (searchBox != null && !searchBox.getValue().isEmpty()) {
+                mixin.cfs$clearFilteredList();
+                mixin.cfs$applyFilter(searchBox.getValue());
+            }
         }
     }
 
