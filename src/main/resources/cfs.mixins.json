@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "me.cyanhana.cfs.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "refmap": "cfs.refmap.json",
   "mixins": [
   ],

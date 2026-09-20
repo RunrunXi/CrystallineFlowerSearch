@@ -18,7 +18,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,9 +47,6 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
     @Unique
     private EditBox cfs$searchBox;
 
-    @Unique
-    private final List<ResourceLocation> cfs$filteredEnchantmentList = new ArrayList<>();
-
     public CrystallineFlowerScreenMixin(CrystallineFlowerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
     }
@@ -60,6 +56,7 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
      */
     @Unique
     public void cfs$createSearchBox() {
+        String previousSearch = this.cfs$searchBox == null ? "" : this.cfs$searchBox.getValue();
         int startX = (this.width - this.imageWidth) / 2;
         int startY = (this.height - this.imageHeight) / 2;
 
@@ -73,6 +70,7 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
         );
         this.cfs$searchBox.setMaxLength(50);
         this.cfs$searchBox.setHint(Component.translatable("gui.cfs.search_hint"));
+        this.cfs$searchBox.setValue(previousSearch);
         this.cfs$searchBox.setResponder(this::cfs$onSearchChanged);
         this.addRenderableWidget(this.cfs$searchBox);
     }
@@ -82,28 +80,22 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
      */
     @Unique
     public void cfs$onSearchChanged(String searchText) {
-        String filter = searchText.toLowerCase(Locale.ROOT).trim();
+        // 从当前有效数据重建，绝不能恢复物品/经验更新前的旧附魔 ID。
+        // 排序尾部的注入会通过接口重新应用搜索条件。
+        CrystallineFlowerScreen.SortAndAssignAvailableEnchants();
+        cfs$resetScrollState();
+    }
 
-        if (filter.isEmpty()) {
-            // 无搜索内容时恢复原始列表
-            if (!this.cfs$filteredEnchantmentList.isEmpty()) {
-                CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
-                CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(this.cfs$filteredEnchantmentList);
-                this.cfs$filteredEnchantmentList.clear();
-                cfs$resetScrollState();
-            }
-            return;
-        }
-
-        // 首次过滤时保存原始列表
-        if (this.cfs$filteredEnchantmentList.isEmpty()) {
-            this.cfs$filteredEnchantmentList.addAll(CrystallineFlowerScreen.enchantmentsAvailableSortedList);
-        }
-
-        List<ResourceLocation> filtered = this.cfs$filteredEnchantmentList.stream()
+    @Override
+    @Unique
+    public void cfs$refreshSearchResults() {
+        String filter = this.cfs$searchBox == null ? ""
+                : this.cfs$searchBox.getValue().toLowerCase(Locale.ROOT).trim();
+        List<ResourceLocation> filtered = CrystallineFlowerScreen.enchantmentsAvailableSortedList.stream()
                 .filter(rl -> {
                     var skeleton = CrystallineFlowerScreen.enchantmentsAvailable.get(rl);
                     if (skeleton == null) return false;
+                    if (filter.isEmpty()) return true;
 
                     // 翻译键
                     String translationKey = "enchantment." + skeleton.namespace + "." + skeleton.path;
@@ -133,29 +125,9 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.clear();
         CrystallineFlowerScreen.enchantmentsAvailableSortedList.addAll(filtered);
 
-        cfs$resetScrollState();
-    }
-
-    @Unique
-    public EditBox cfs$getSearchBox() {
-        return this.cfs$searchBox;
-    }
-
-    @Unique
-    public void cfs$clearFilteredList() {
-        this.cfs$filteredEnchantmentList.clear();
-    }
-
-    @Unique
-    public void cfs$applyFilter(String text) {
-        // 保存当前滚动位置
-        int oldStartIndex = this.startIndex;
-        float oldScrollOff = this.scrollOff;
-        // 执行过滤
-        this.cfs$onSearchChanged(text);
-        // 恢复滚动位置
+        // 数据更新可能缩短列表；同时修正滚动索引，避免原界面的越界访问。
         int maxIndex = Math.max(0, CrystallineFlowerScreen.enchantmentsAvailableSortedList.size() - 3);
-        this.startIndex = Math.min(oldStartIndex, maxIndex);
+        this.startIndex = Math.max(0, Math.min(this.startIndex, maxIndex));
         this.scrollOff = maxIndex > 0 ? (float) this.startIndex / maxIndex : 0.0F;
         this.scrolling = false;
     }
@@ -182,26 +154,14 @@ public abstract class CrystallineFlowerScreenMixin extends AbstractContainerScre
     }
 
     /**
-     * 关闭界面时清理搜索状态
-     */
-    @Inject(method = "onClose", at = @At("HEAD"))
-    private void cfs$onCloseCleanup(CallbackInfo ci) {
-        this.cfs$filteredEnchantmentList.clear();
-    }
-
-    /**
      * 在更新附魔列表后重新应用搜索过滤
      */
     @Inject(method = "SortAndAssignAvailableEnchants", at = @At("TAIL"), remap = false)
     private static void cfs$afterSortAndAssign(CallbackInfo ci) {
-        // 如果当前有搜索条件，重新应用过滤
+        // 通过接口访问注入方法，避免直接引用 Mixin 类型。
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen instanceof CrystallineFlowerScreenMixin mixin) {
-            EditBox searchBox = mixin.cfs$getSearchBox();
-            if (searchBox != null && !searchBox.getValue().isEmpty()) {
-                mixin.cfs$clearFilteredList();
-                mixin.cfs$applyFilter(searchBox.getValue());
-            }
+        if (minecraft.screen instanceof SearchBoxAccessor accessor) {
+            accessor.cfs$refreshSearchResults();
         }
     }
 
